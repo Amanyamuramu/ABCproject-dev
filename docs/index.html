@@ -353,46 +353,45 @@
     }
 
     function featureExtraction() {
-      function featureExtraction() {
-        xmin = Math.min.apply(Math, xdata);
-        $("#xmin").text(xmin);
-        xmax = Math.max.apply(Math, xdata);
-        $("#xmax").text(xmax);
-        xave = arrAvg(xdata);
-        $("#xave").text(xave);
-        xvariance = variance(xdata);
-        xstdDev = standardDeviation(xdata);
-        xskewness = skewness(xdata);
-        xkurtosis = kurtosis(xdata);
+      xmin = Math.min.apply(Math, xdata);
+      $("#xmin").text(xmin);
+      xmax = Math.max.apply(Math, xdata);
+      $("#xmax").text(xmax);
+      xave = arrAvg(xdata);
+      $("#xave").text(xave);
 
-        ymin = Math.min.apply(Math, ydata);
-        $("#ymin").text(ymin);
-        ymax = Math.max.apply(Math, ydata);
-        $("#ymax").text(ymax);
-        yave = arrAvg(ydata);
-        $("#yave").text(yave);
-        yvariance = variance(ydata);
-        ystdDev = standardDeviation(ydata);
-        yskewness = skewness(ydata);
-        ykurtosis = kurtosis(ydata);
+      ymin = Math.min.apply(Math, ydata);
+      $("#ymin").text(ymin);
+      ymax = Math.max.apply(Math, ydata);
+      $("#ymax").text(ymax);
+      yave = arrAvg(ydata);
+      $("#yave").text(yave);
 
-        zmin = Math.min.apply(Math, zdata);
-        $("#zmin").text(zmin);
-        zmax = Math.max.apply(Math, zdata);
-        $("#zmax").text(zmax);
-        zave = arrAvg(zdata);
-        $("#zave").text(zave);
-        zvariance = variance(zdata);
-        zstdDev = standardDeviation(zdata);
-        zskewness = skewness(zdata);
-        zkurtosis = kurtosis(zdata);
+      zmin = Math.min.apply(Math, zdata);
+      $("#zmin").text(zmin);
+      zmax = Math.max.apply(Math, zdata);
+      $("#zmax").text(zmax);
+      zave = arrAvg(zdata);
+      $("#zave").text(zave);
 
-        // Calculate the correlation coefficients only if all arrays have equal length
-        if (xdata.length === ydata.length && xdata.length === zdata.length) {
-          corrXY = correlationCoefficient(xdata, ydata);
-          corrXZ = correlationCoefficient(xdata, zdata);
-          corrYZ = correlationCoefficient(ydata, zdata);
-        }
+      xvariance = variance(xdata);
+      xstdDev = standardDeviation(xdata);
+      xskewness = skewness(xdata);
+      xkurtosis = kurtosis(xdata);
+
+      yvariance = variance(ydata);
+      ystdDev = standardDeviation(ydata);
+      yskewness = skewness(ydata);
+      ykurtosis = kurtosis(ydata);
+
+      zvariance = variance(zdata);
+      zstdDev = standardDeviation(zdata);
+      zskewness = skewness(zdata);
+      zkurtosis = kurtosis(zdata);
+      if (xdata.length === ydata.length && xdata.length === zdata.length) {
+        corrXY = correlationCoefficient(xdata, ydata);
+        corrXZ = correlationCoefficient(xdata, zdata);
+        corrYZ = correlationCoefficient(ydata, zdata);
       }
     }
 
