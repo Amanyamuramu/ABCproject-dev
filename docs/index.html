@@ -113,6 +113,26 @@
     var zmax = 0.0;
     var zave = 0.0;
 
+    //追加の特徴量　変数
+    var xvariance = 0.0;
+    var xstdDev = 0.0;
+    var xskewness = 0.0;
+    var xkurtosis = 0.0;
+
+    var yvariance = 0.0;
+    var ystdDev = 0.0;
+    var yskewness = 0.0;
+    var ykurtosis = 0.0;
+
+    var zvariance = 0.0;
+    var zstdDev = 0.0;
+    var zskewness = 0.0;
+    var zkurtosis = 0.0;
+
+    var corrXY = 0.0;
+    var corrXZ = 0.0;
+    var corrYZ = 0.0;
+
     //////////////////////////////////////////////////////
     //Function to get sensor access permission from the browser
     //////////////////////////////////////////////////////
@@ -154,10 +174,11 @@
     var measurements = [];
     var measureInterval;
 
-    //各種データを何秒間分取得するのか
+    //各種データを60秒間取得
     function startMeasurement() {
       measurements = [];
       measureInterval = setInterval(function () {
+        featureExtraction(); // Ensure the features are extracted and updated
         if (measurements.length >= 15) {
           clearInterval(measureInterval);
           exportCSV();
@@ -166,12 +187,27 @@
             xmin: xmin,
             xmax: xmax,
             xave: xave,
+            xvariance: xvariance,
+            xstdDev: xstdDev,
+            xskewness: xskewness,
+            xkurtosis: xkurtosis,
             ymin: ymin,
             ymax: ymax,
             yave: yave,
+            yvariance: yvariance,
+            ystdDev: ystdDev,
+            yskewness: yskewness,
+            ykurtosis: ykurtosis,
             zmin: zmin,
             zmax: zmax,
             zave: zave,
+            zvariance: zvariance,
+            zstdDev: zstdDev,
+            zskewness: zskewness,
+            zkurtosis: zkurtosis,
+            corrXY: corrXY,
+            corrXZ: corrXZ,
+            corrYZ: corrYZ,
           });
         }
       }, 4000);
@@ -179,11 +215,12 @@
 
     function exportCSV() {
       var csvContent = "data:text/csv;charset=utf-8,";
+      // Add header for new statistical measures
       csvContent +=
-        "Time,X Min,X Max,X Ave,Y Min,Y Max,Y Ave,Z Min,Z Max,Z Ave\n";
+        "Time,X Min,X Max,X Ave,X Variance,X Std Dev,X Skewness,X Kurtosis,Y Min,Y Max,Y Ave,Y Variance,Y Std Dev,Y Skewness,Y Kurtosis,Z Min,Z Max,Z Ave,Z Variance,Z Std Dev,Z Skewness,Z Kurtosis,Corr XY,Corr XZ,Corr YZ\n";
 
       measurements.forEach(function (row, index) {
-        var time = index * 3;
+        var time = index * 4; // Assuming 4 seconds interval for consistency with your setup
         var dataString = time + "," + Object.values(row).join(",");
         csvContent += dataString + "\n";
       });
@@ -205,23 +242,23 @@
     function startTimer() {
       if (timer) {
         clearInterval(timer);
-        $("#elapsedTime").text("0"); 
+        $("#elapsedTime").text("0");
       }
-      startTime = Date.now(); 
+      startTime = Date.now();
       timer = setInterval(function () {
-        var elapsedTime = Date.now() - startTime; 
-        $("#elapsedTime").text((elapsedTime / 1000).toFixed(2)); 
+        var elapsedTime = Date.now() - startTime;
+        $("#elapsedTime").text((elapsedTime / 1000).toFixed(2));
 
         // X秒経過　r例：60000
         if (elapsedTime >= 60000) {
           clearInterval(timer);
         }
-      }, 100); 
+      }, 100);
     }
 
     function startMeasurementAndTimer() {
-        startMeasurement(); // 
-        startTimer();       //
+      startMeasurement(); //
+      startTimer(); //
     }
     ////////////////////////////////////////////////////////////////////
     //Function(1): 読み込まれてきた最新の加速度データ(X,Y,Z)を処理する関数で、秒速10〜100回で呼び出し
@@ -268,27 +305,95 @@
     //helper func. to calculate average
     const arrAvg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
+    //分散
+    function variance(data) {
+      const mean = arrAvg(data);
+      return (
+        data.reduce((acc, val) => acc + (val - mean) ** 2, 0) / data.length
+      );
+    }
+
+    //標準偏差
+    function standardDeviation(data) {
+      return Math.sqrt(variance(data));
+    }
+
+    //尖度
+    function skewness(data) {
+      const mean = arrAvg(data);
+      const stdDev = standardDeviation(data);
+      return (
+        data.reduce((acc, val) => acc + (val - mean) ** 3, 0) /
+        (data.length * stdDev ** 3)
+      );
+    }
+    //ワイド
+    function kurtosis(data) {
+      const mean = arrAvg(data);
+      const stdDev = standardDeviation(data);
+      return (
+        data.reduce((acc, val) => acc + (val - mean) ** 4, 0) /
+          (data.length * stdDev ** 4) -
+        3
+      );
+    }
+
+    function correlationCoefficient(data1, data2) {
+      const mean1 = arrAvg(data1);
+      const mean2 = arrAvg(data2);
+      const stdDev1 = standardDeviation(data1);
+      const stdDev2 = standardDeviation(data2);
+
+      const covariance =
+        data1
+          .map((val, index) => (val - mean1) * (data2[index] - mean2))
+          .reduce((acc, val) => acc + val, 0) / data1.length;
+
+      return covariance / (stdDev1 * stdDev2);
+    }
+
     function featureExtraction() {
-      xmin = Math.min.apply(Math, xdata);
-      $("#xmin").text(xmin);
-      xmax = Math.max.apply(Math, xdata);
-      $("#xmax").text(xmax);
-      xave = arrAvg(xdata);
-      $("#xave").text(xave);
+      function featureExtraction() {
+        xmin = Math.min.apply(Math, xdata);
+        $("#xmin").text(xmin);
+        xmax = Math.max.apply(Math, xdata);
+        $("#xmax").text(xmax);
+        xave = arrAvg(xdata);
+        $("#xave").text(xave);
+        xvariance = variance(xdata);
+        xstdDev = standardDeviation(xdata);
+        xskewness = skewness(xdata);
+        xkurtosis = kurtosis(xdata);
 
-      ymin = Math.min.apply(Math, ydata);
-      $("#ymin").text(ymin);
-      ymax = Math.max.apply(Math, ydata);
-      $("#ymax").text(ymax);
-      yave = arrAvg(ydata);
-      $("#yave").text(yave);
+        ymin = Math.min.apply(Math, ydata);
+        $("#ymin").text(ymin);
+        ymax = Math.max.apply(Math, ydata);
+        $("#ymax").text(ymax);
+        yave = arrAvg(ydata);
+        $("#yave").text(yave);
+        yvariance = variance(ydata);
+        ystdDev = standardDeviation(ydata);
+        yskewness = skewness(ydata);
+        ykurtosis = kurtosis(ydata);
 
-      zmax = Math.max.apply(Math, zdata);
-      $("#zmax").text(zmax);
-      zmin = Math.min.apply(Math, zdata);
-      $("#zmin").text(zmin);
-      zave = arrAvg(zdata);
-      $("#zave").text(zave);
+        zmin = Math.min.apply(Math, zdata);
+        $("#zmin").text(zmin);
+        zmax = Math.max.apply(Math, zdata);
+        $("#zmax").text(zmax);
+        zave = arrAvg(zdata);
+        $("#zave").text(zave);
+        zvariance = variance(zdata);
+        zstdDev = standardDeviation(zdata);
+        zskewness = skewness(zdata);
+        zkurtosis = kurtosis(zdata);
+
+        // Calculate the correlation coefficients only if all arrays have equal length
+        if (xdata.length === ydata.length && xdata.length === zdata.length) {
+          corrXY = correlationCoefficient(xdata, ydata);
+          corrXZ = correlationCoefficient(xdata, zdata);
+          corrYZ = correlationCoefficient(ydata, zdata);
+        }
+      }
     }
 
     ////////////////////////////////////////////////////////////////////
