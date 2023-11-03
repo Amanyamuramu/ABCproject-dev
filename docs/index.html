@@ -11,7 +11,7 @@
     <button onclick="requestMotionPermission();">
       Get permission and start sensing
     </button>
-    <button onclick="startMeasurement();">Start 60s Measurement</button>
+    <button onclick="startMeasurementAndTimer();">Start 60s Measurement</button>
     <div>経過時間: <span id="elapsedTime">0</span> 秒</div>
     <button onclick="stopDeviceMotion();">Stop</button>
 
@@ -154,6 +154,7 @@
     var measurements = [];
     var measureInterval;
 
+    //各種データを何秒間分取得するのか
     function startMeasurement() {
       measurements = [];
       measureInterval = setInterval(function () {
@@ -201,7 +202,7 @@
     var timer = null;
     var startTime;
 
-    function startMeasurement() {
+    function startTimer() {
       if (timer) {
         clearInterval(timer);
         $("#elapsedTime").text("0"); 
@@ -218,6 +219,10 @@
       }, 100); 
     }
 
+    function startMeasurementAndTimer() {
+        startMeasurement(); // 
+        startTimer();       //
+    }
     ////////////////////////////////////////////////////////////////////
     //Function(1): 読み込まれてきた最新の加速度データ(X,Y,Z)を処理する関数で、秒速10〜100回で呼び出し
     ////////////////////////////////////////////////////////////////////
