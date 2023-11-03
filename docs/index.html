@@ -61,31 +61,34 @@
     </ul>
 
     <h3>収集した行動データについて</h3>
+    スマートフォンの向きを統一してポケットに入れて5種類のデータ（stationary,walking,walking_with_a_luggage,dancing,climbing_up_steps）を収集
     <ul>
-      <li>選定した理由</li>
-      <li>収集についての詳細</li>
-      <li>工夫した点 / 困難だった点</li>
+      <li>選定した理由：日常生活で比較的多く用いられるため</li>
+      <li>収集についての詳細：日常生活でよく使用するポケットに入れて計測</li>
+      <li>工夫した点 / 困難だった点：スマートフォンの向きを統一することで、データ収集の回数を減らした。</li>
     </ul>
 
     <h3>特徴量について</h3>
+    XYZの各、最大値、最小値、平均値のほかに分散、標準偏差、尖度、歪度、相関係数
     <ul>
-      <li>選定した理由</li>
-      <li>追加した特徴量について詳細</li>
-      <li>工夫した点 / 困難だった点</li>
+      <li>選定した理由：これらの統計的指標がデータの新たな側面を提示可能と考えたため。また今後の主成分分析等のために最大値、最小値、平均値のみならずより多くの特徴量を取得するため</li>
+      <li>追加した特徴量について詳細 : 分散、標準偏差、尖度、歪度、相関係数の算出は50hzで計測された4秒間の加速度の各軸のデータに対してそれぞれ行われている。</li>
+      <li>工夫した点 / 困難だった点 : ウェブ上で計測し、csvへ出力するよう処理した点</li>
     </ul>
 
     <h3>機械学習モデル</h3>
+    ランダムツリー(RandomTree)分類器
     <ul>
-      <li>採用したアルゴリズムや学習結果の詳細</li>
-      <li>工夫した点</li>
-      <li>工夫した点 / 困難だった点</li>
+      <li>採用したアルゴリズムや学習結果の詳細: 活動認識において58.67%の精度を達成した。10-foldクロスバリデーションを使用しモデルの汎化能力を評価。</li>
+      <li>工夫した点 : 得られたデータはラベル内で行をランダムに入れ替えた</li>
+      <li>工夫した点 / 困難だった点 : Kappa係数値（0.4833）からいくつかのクラス間での識別が困難とわかった</li>
     </ul>
 
     <h3>実機に移植しての性能評価</h3>
     <ul>
-      <li>評価尺度について</li>
-      <li>評価結果</li>
-      <li>工夫した点 / 困難だった点</li>
+      <li>評価尺度について : 精度（Accuracy）、精度（Precision）、リコール（Recall）、F-測度（F-Measure）、及びマシューズ相関係数（MCC）を含む複数の評価尺度</li>
+      <li>評価結果: 総合的な精度は58.67%一部の活動（特に「still」や「dancing」）は高い精度で識別できたが、他の行動（例えば「walking」や「climbing_up_steps」）は改善の余地がみられる</li>
+      <li>工夫した点 / 困難だった点：得られたデータはラベル内で行をランダムに入れ替えた</li>
     </ul>
   </body>
 
@@ -400,27 +403,80 @@
     //  - 実際には機械学習エンジンが出力したif文の固まり (決定木アルゴリズム）がここに入ります
     ////////////////////////////////////////////////////////////////////
     function classify() {
-      /*
-            if(zmin <= 0.1){
-            if(xmin <= -0.2){
-                if(xmin <= -0.4){
-                return 'walking';
-                }else{
-                return 'still';
-                }
-            }else{
-                return 'walking';
-            }
-            }else{
-            return 'still';
-            }
-        */
-
-      if (xmax > 1) {
-        return "walking";
-      } else {
+      if (zvariance < 0.4) {
         return "still";
+      } else if (zvariance >= 0.4) {
+        if (xstdDev < 2.91) {
+          if (ymin < -3.4) {
+            if (ymin < -5.8) {
+              if (zskewness < 1.22) {
+                return "luggage";
+              } else if (zskewness >= 1.22) {
+                if (zmin < -4.4) {
+                  if (xstdDev < 1.67) {
+                    return "climbing_up_steps";
+                  } else if (xstdDev >= 1.67) {
+                    return "luggage";
+                  }
+                } else if (zmin >= -4.4) {
+                  return "walking";
+                }
+              }
+            } else if (ymin >= -5.8) {
+              if (yskewness < 0.06) {
+                if (ymin < -4.05) {
+                  return "walking";
+                } else if (ymin >= -4.05) {
+                  if (xmin < -2.5) {
+                    // 'X Min' needs a corresponding variable, assuming it's 'xmin' based on your provided variables
+                    return "luggage";
+                  } else if (xmin >= -2.5) {
+                    // Same as above for 'X Min'
+                    return "walking";
+                  }
+                }
+              } else if (yskewness >= 0.06) {
+                return "dancing";
+              }
+            }
+          } else if (ymin >= -3.4) {
+            if (corrXZ < 0.15) {
+              if (xvariance < 1.04) {
+                return "climbing_up_steps";
+              } else if (xvariance >= 1.04) {
+                if (zave < -0.24) {
+                  return "walking";
+                } else if (zave >= -0.24) {
+                  return "climbing_up_steps";
+                }
+              }
+            } else if (corrXZ >= 0.15) {
+              if (xstdDev < 1.05) {
+                return "luggage";
+              } else if (xstdDev >= 1.05) {
+                if (yave < -0.19) {
+                  return "climbing_up_steps";
+                } else if (yave >= -0.19) {
+                  return "walking";
+                }
+              }
+            }
+          }
+        } else if (xstdDev >= 2.91) {
+          if (xvariance < 12.15) {
+            if (xmin < -7.35) {
+              // 'X Min' needs a corresponding variable, assuming it's 'xmin' based on your provided variables
+              return "dancing";
+            } else if (xmin >= -7.35) {
+              // Same as above for 'X Min'
+              return "luggage";
+            }
+          } else if (xvariance >= 12.15) {
+            return "dancing";
+          }
+        }
       }
+      return null;
     }
   </script>
   <!--  ===========================================  -->
