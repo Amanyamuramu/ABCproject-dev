@@ -12,6 +12,7 @@
       Get permission and start sensing
     </button>
     <button onclick="startMeasurement();">Start 60s Measurement</button>
+    <div>経過時間: <span id="elapsedTime">0</span> 秒</div>
     <button onclick="stopDeviceMotion();">Stop</button>
 
     <!-- プルダウンからラベルを選択するように -->
@@ -44,7 +45,7 @@
 
     <h2>(1) Raw sensor values for this time window (X, Y, Z)</h2>
 
-    <textarea id="raw-data" cols=80 ROWS=51></textarea>
+    <textarea id="raw-data" cols="80" rows="51"></textarea>
 
     <textarea id="csvData" style="display: none"></textarea>
 
@@ -156,7 +157,7 @@
     function startMeasurement() {
       measurements = [];
       measureInterval = setInterval(function () {
-        if (measurements.length >= 20) {
+        if (measurements.length >= 15) {
           clearInterval(measureInterval);
           exportCSV();
         } else {
@@ -172,7 +173,7 @@
             zave: zave,
           });
         }
-      }, 3000);
+      }, 4000);
     }
 
     function exportCSV() {
@@ -196,12 +197,31 @@
       link.click();
     }
 
+    // 押してからの経過時間計測
+    var timer = null;
+    var startTime;
+
+    function startMeasurement() {
+      if (timer) {
+        clearInterval(timer);
+        $("#elapsedTime").text("0"); 
+      }
+      startTime = Date.now(); 
+      timer = setInterval(function () {
+        var elapsedTime = Date.now() - startTime; 
+        $("#elapsedTime").text((elapsedTime / 1000).toFixed(2)); 
+
+        // X秒経過　r例：60000
+        if (elapsedTime >= 60000) {
+          clearInterval(timer);
+        }
+      }, 100); 
+    }
+
     ////////////////////////////////////////////////////////////////////
-    //Function(1): 読み込まれてきた最新の加速度データ(X,Y,Z)を処理する関数
-    //  - この関数は(機種によりますが) 秒速10〜100回というような高頻度で呼ばれます
+    //Function(1): 読み込まれてきた最新の加速度データ(X,Y,Z)を処理する関数で、秒速10〜100回で呼び出し
     ////////////////////////////////////////////////////////////////////
     function handleAcceleration(ev) {
-      //alert("" + event.acceleration.x + " " + event.acceleration.y + " " + event.acceleration.z);
       $("#accel-x").text(ev.acceleration.x);
       xdata.push(ev.acceleration.x);
       $("#accel-y").text(ev.acceleration.y);
@@ -220,10 +240,7 @@
       num_data++;
       //If we have enough raw sensor data...
       if (num_data == NUM_DATA_PER_FRAME) {
-        //execute feature calculations.
         featureExtraction();
-
-        //Let's classify the activity!
         var current_activity = classify();
         $("#current_result").text(current_activity);
 
@@ -240,11 +257,8 @@
 
     ////////////////////////////////////////////////////////////////////
     //Function(2):センサデータから "feature"(特徴量)を計算する関数
-    //  - この関数は NUM_DATA_PER_FRAME 変数で設定された数だけセンサデータが
-    //    「設定されたタイムフレーム」にたまる度に呼ばれます。
-    //  - 例: センサデータが 50Hz (=50 data / seconds)
-    //        NUM_DATA_PER_FRAME が 200 の場合
-    //        → 約4秒に1度の頻度で呼ばれます
+    //  - この関数は NUM_DATA_PER_FRAME 変数で設定された数だけセンサデータが「設定されたタイムフレーム」にたまる度に呼ばれます。
+    //  - 例: センサデータが 50Hz (=50 data / seconds)NUM_DATA_PER_FRAME が 200 の場合→ 約4秒に1度の頻度で呼ばれます
     ////////////////////////////////////////////////////////////////////
     //helper func. to calculate average
     const arrAvg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -273,11 +287,8 @@
     }
 
     ////////////////////////////////////////////////////////////////////
-    //Function(3): 最新フレームにおける特徴量(feature)から、現在のユーザの
-    //行動を分類 (classify) する関数
-    //  - ここに書いてあるのは、手打ちで書いたサンプルのif文ロジックです
-    //  - 実際には機械学習エンジンが出力したif文の固まり (決定木アルゴリズムの場合)
-    //  - がここに入ります
+    //Function(3): 最新フレームにおける特徴量(feature)から、現在のユーザの行動を分類 (classify) する関数
+    //  - 実際には機械学習エンジンが出力したif文の固まり (決定木アルゴリズム）がここに入ります
     ////////////////////////////////////////////////////////////////////
     function classify() {
       /*
